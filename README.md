@@ -2,7 +2,7 @@
 
 A Python-based voice assistant that listens, transcribes speech, generates responses using GPT-3, and speaks back with a Siri-like animated UI. This project demonstrates the integration of OpenAI's Whisper for transcription, GPT-3 for response generation, and pyttsx3 for text-to-speech.
 
-🚀 Features
+# 🚀 Features
 
 🎤 Speech Recognition: Uses OpenAI's Whisper for accurate transcription.
 
@@ -14,7 +14,7 @@ A Python-based voice assistant that listens, transcribes speech, generates respo
 
 🛠️ Automatic Silence Detection: Stops recording when silence is detected.
 
-🖥️ System Requirements
+# 🖥️ System Requirements
 
 Python 3.8+
 
@@ -22,7 +22,7 @@ Works on Windows, macOS, and Linux
 
 Requires an active OpenAI API key
 
-🛠️ Installation
+# 🛠️ Installation
 
 1️⃣ Clone the Repository
 
@@ -47,26 +47,26 @@ Add your OpenAI API Key inside .env
 
 OPENAI_API_KEY=your-api-key-here
 
-🏃‍♂️ Running the Bot
+# 🏃‍♂️ Running the Bot
 
 python main.py
 
 Select your microphone device when prompted and start speaking!
 
-📝 Configuration
+# 📝 Configuration
 
 Modify silence_threshold and silence_duration in record_audio_dynamic() to fine-tune silence detection.
 
 Change engine="text-davinci-003" in generate_response() to a different GPT model if needed.
 
-📜 License
+# 📜 License
 
 MIT License. Feel free to use and improve!
 
-📅 Project Timeline
+#📅 Project Timeline
 
 Project Started: June 2024
 
 Last Updated: February 27, 2025
 
-🔗 **Made with ❤️ by **Arnav Verma
+## 🔗 **Made with ❤️ by **Arnav Verma
