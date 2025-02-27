@@ -1,0 +1,136 @@
+import tkinter as tk
+import os
+import whisper
+import pyaudio
+import wave
+import time
+import openai
+import pyttsx3
+import audioop
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Initialize TTS engine
+engine = pyttsx3.init()
+
+def animate_circle(canvas, circle, scale=50):
+    if scale < 100:
+        scale += 2
+    else:
+        scale = 50
+    canvas.scale(circle, 200, 200, 1 + scale / 100, 1 + scale / 100)
+    canvas.update()
+    canvas.after(50, animate_circle, canvas, circle, scale)
+
+def record_audio_dynamic(filename, input_device_index=None, silence_threshold=1000, silence_duration=1.5):
+    chunk = 1024
+    sample_format = pyaudio.paInt16
+    channels = 1
+    rate = 44100
+    
+    p = pyaudio.PyAudio()
+    stream = p.open(format=sample_format, channels=channels, rate=rate, input=True,
+                    input_device_index=input_device_index, frames_per_buffer=chunk)
+    
+    frames = []
+    silent_chunks = 0
+    silence_limit_chunks = int(rate / chunk * silence_duration)
+    
+    print("Recording...")
+    
+    while True:
+        data = stream.read(chunk)
+        frames.append(data)
+        rms = audioop.rms(data, 2)
+        if rms < silence_threshold:
+            silent_chunks += 1
+        else:
+            silent_chunks = 0
+        if silent_chunks > silence_limit_chunks:
+            break
+    
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+    
+    with wave.open(filename, 'wb') as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(p.get_sample_size(sample_format))
+        wf.setframerate(rate)
+        wf.writeframes(b''.join(frames))
+    
+    print(f"Recording complete: {filename}")
+
+def transcribe_audio(model, audio_file_path):
+    try:
+        if os.path.exists(audio_file_path):
+            print(f"Transcribing file: {audio_file_path}")
+            time.sleep(1)
+            result = model.transcribe(audio_file_path)
+            os.remove(audio_file_path)
+            return result["text"]
+        else:
+            print("File does not exist.")
+            return ""
+    except Exception as e:
+        print(f"Error in transcription: {e}")
+        return ""
+
+def generate_response(prompt):
+    try:
+        response = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=150, temperature=0.7)
+        return response.choices[0].text.strip()
+    except Exception as e:
+        print(f"Error generating response: {e}")
+        return "Error processing request."
+
+def speak_text(text):
+    try:
+        engine.say(text)
+        engine.runAndWait()
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+
+def bot_loop(canvas, circle, model, input_device_index):
+    animate_circle(canvas, circle)
+    try:
+        audio_file_path = "audio_recording.wav"
+        record_audio_dynamic(audio_file_path, input_device_index=input_device_index)
+        transcript = transcribe_audio(model, audio_file_path)
+        print(f"User said: {transcript}")
+        if transcript:
+            bot_response = generate_response(transcript)
+            print(f"Bot: {bot_response}")
+            speak_text(bot_response)
+    except Exception as e:
+        print(f"Error in bot loop: {e}")
+
+def handle_exit(root):
+    root.destroy()
+
+def list_audio_devices():
+    p = pyaudio.PyAudio()
+    print("Available audio input devices:")
+    for i in range(p.get_device_count()):
+        info = p.get_device_info_by_index(i)
+        if info['maxInputChannels'] > 0:
+            print(f"Device {i}: {info['name']} (Channels: {info['maxInputChannels']})")
+
+if __name__ == "__main__":
+    list_audio_devices()
+    input_device_index = int(input("Select the input device: "))
+    
+    root = tk.Tk()
+    root.geometry("1000x1000")
+    canvas = tk.Canvas(root, width=1000, height=1000)
+    canvas.pack()
+    circle = canvas.create_oval(150, 150, 250, 250, outline="blue", width=2)
+    
+    model = whisper.load_model("base")
+    
+    canvas.after(0, bot_loop, canvas, circle, model, input_device_index)
+    root.protocol("WM_DELETE_WINDOW", lambda: handle_exit(root))
+    root.mainloop()
